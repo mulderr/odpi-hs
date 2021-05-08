@@ -1,7 +1,7 @@
 module Database.Odpi.Statement where
 
 import Data.ByteString (ByteString)
-import Data.Word
+import Data.Word ( Word32 )
 import Foreign.Ptr (Ptr)
 import Foreign.Marshal.Utils (toBool, fromBool)
 

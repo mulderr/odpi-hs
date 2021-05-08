@@ -1,7 +1,7 @@
 module Database.Odpi.Pool where
 
 import Data.ByteString (ByteString)
-import Data.Word
+import Data.Word ( Word32 )
 
 import Database.Odpi.LibDpi
 import Database.Odpi.Types

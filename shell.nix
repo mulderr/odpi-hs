@@ -16,7 +16,6 @@ let
 in
   hpkgs.shellFor {
     packages = ps: with hpkgs; [
-      odpi-libdpi
       odpi-simple
     ];
     buildInputs = with pkgs; [

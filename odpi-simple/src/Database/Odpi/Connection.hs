@@ -1,10 +1,10 @@
 module Database.Odpi.Connection where
 
 import Data.ByteString (ByteString)
-import Data.Word
-import Foreign.C.Types
+import Data.Word ( Word32 )
+import Foreign.C.Types ( CUInt, CLong )
 import Foreign.Marshal.Utils (fromBool)
-import Foreign.Ptr
+import Foreign.Ptr ( Ptr, nullPtr )
 
 import Database.Odpi.LibDpi
 import Database.Odpi.Types

@@ -9,9 +9,9 @@
 module Database.Odpi.FromRow where
 
 import Control.Exception (throwIO)
-import Data.Proxy
-import Data.Tuple.Only
-import Data.Word
+import Data.Proxy ( Proxy(..) )
+import Data.Tuple.Only ( Only(Only) )
+import Data.Word ( Word32 )
 
 import Database.Odpi.FromField
 import Database.Odpi.LibDpi

@@ -2,12 +2,12 @@ module Database.Odpi.Data where
 
 import Control.Monad (join)
 import Data.ByteString (ByteString)
-import Data.Int
-import Data.Word
-import Foreign.C.Types
+import Data.Int ( Int64 )
+import Data.Word ( Word64 )
+import Foreign.C.Types ( CDouble(CDouble), CFloat(CFloat) )
 import Foreign.Ptr (Ptr)
 import Foreign.Marshal.Utils (fromBool, toBool)
-import Foreign.Storable
+import Foreign.Storable ( Storable(peek) )
 
 import Database.Odpi.LibDpi
 import Database.Odpi.Util

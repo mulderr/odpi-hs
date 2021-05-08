@@ -57,8 +57,8 @@ module Database.Odpi
 
 import Control.Exception (bracket)
 import Data.ByteString (ByteString)
-import Data.Proxy
-import Data.Tuple.Only
+import Data.Proxy ( Proxy(..) )
+import Data.Tuple.Only ( Only(..) )
 
 import qualified Database.Odpi.LibDpi as Lib
 import Database.Odpi.Context

@@ -1,13 +1,12 @@
 module Database.Odpi.Util where
 
 import Control.Exception (throwIO)
-import Data.ByteString (ByteString)
 import Data.ByteString as B
 import Data.ByteString.Unsafe as B
-import Foreign.C.Types
-import Foreign.Marshal.Alloc
-import Foreign.Ptr
-import Foreign.Storable
+import Foreign.C.Types ( CChar, CInt, CUInt )
+import Foreign.Marshal.Alloc ( alloca )
+import Foreign.Ptr ( Ptr, nullPtr )
+import Foreign.Storable ( Storable(peek) )
 
 import Database.Odpi.LibDpi
 import Database.Odpi.Types

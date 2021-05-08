@@ -6,12 +6,12 @@
 module Database.Odpi.NativeValue where
 
 import Data.ByteString (ByteString)
-import Data.Hashable
-import Data.Int
-import Data.Word
+import Data.Hashable ( Hashable )
+import Data.Int ( Int64 )
+import Data.Word ( Word64 )
 import Foreign.Ptr (Ptr)
 import Foreign.Marshal.Alloc (alloca)
-import GHC.Generics
+import GHC.Generics ( Generic )
 
 import Database.Odpi.Data
 import Database.Odpi.LibDpi

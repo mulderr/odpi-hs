@@ -3,8 +3,9 @@ module Database.Odpi.Context
   , contextGetError -- defined in Util
   ) where
 
-import Foreign.Marshal.Alloc
-import Foreign.Storable
+import Foreign.Marshal.Alloc ( alloca )
+import Foreign.Ptr (nullPtr)
+import Foreign.Storable ( Storable(peek) )
 
 import Database.Odpi.LibDpi
 import Database.Odpi.Types
@@ -14,7 +15,7 @@ contextCreateEither :: IO (Either ErrorInfo Context)
 contextCreateEither =
   alloca $ \contextPP -> do
     alloca $ \errorInfoP -> do
-      r <- context_createWithParams majorVersion minorVersion contextPP errorInfoP
+      r <- context_createWithParams majorVersion minorVersion nullPtr contextPP errorInfoP
       if isOk r
         then fmap (Right . Context) $ peek contextPP
         else fmap Left $ peek errorInfoP

@@ -2,7 +2,9 @@ module Database.Odpi.Types where
 
 import Control.Exception (Exception)
 import Foreign.Ptr (Ptr)
+
 import Database.Odpi.LibDpi
+
 
 newtype Context = Context { unContext :: Ptr DpiContext } deriving Show
 
@@ -49,5 +51,3 @@ data DpiException
   deriving Show
 
 instance Exception DpiException
-
-

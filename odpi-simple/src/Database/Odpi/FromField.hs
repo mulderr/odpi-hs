@@ -51,15 +51,16 @@ module Database.Odpi.FromField where
 import Control.Exception
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B8
-import Data.Fixed
-import Data.Int
-import Data.Proxy
-import Data.Word
+import Data.Fixed ( Fixed(MkFixed), Pico )
+import Data.Int ( Int16, Int32, Int64 )
+import Data.Proxy ( Proxy(..) )
+import Data.Word ( Word16, Word32, Word64 )
 import Data.Scientific (Scientific)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.LocalTime
+    ( LocalTime(LocalTime), TimeOfDay(TimeOfDay) )
 
 import Database.Odpi.NativeValue
 import Database.Odpi.LibDpi
