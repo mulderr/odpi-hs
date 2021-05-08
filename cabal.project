@@ -1,0 +1,4 @@
+packages:
+  ./odpi-libdpi
+  ./odpi-simple
+ 

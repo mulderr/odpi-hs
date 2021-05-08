@@ -1,0 +1,26 @@
+name:                odpi-libdpi
+version:             0.3.0.0
+synopsis:            Low level bindings to ODPI-C forked from odpic-raw
+-- description:         
+license:             BSD3
+license-file:        LICENSE
+author:              Daniel Yu, Maciej Kazulak
+maintainer: 
+-- copyright:           
+category:            Database
+build-type:          Simple
+extra-source-files:  ChangeLog.md
+cabal-version:       >=2.0
+
+library
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  extra-libraries:     odpic
+  ghc-options:         -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
+  exposed-modules:
+      Database.Odpi.LibDpi
+  build-tool-depends:  c2hs:c2hs
+  build-depends:
+      base             >= 4.9    && < 5
+    , bytestring       >= 0.10   && < 0.11
+    , hashable         >= 1.1    && < 1.4

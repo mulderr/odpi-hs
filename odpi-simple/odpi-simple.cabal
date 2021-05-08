@@ -1,0 +1,39 @@
+name:                 odpi-simple
+version:              0.2.1.0
+synopsis:             Mid-level ODPI-C wrapper
+description:          Convenience wrappers and utility functions around odpi-libdpi.
+license:              BSD3
+license-file:         LICENSE
+author:               Maciej Kazulak
+maintainer:           kazulakm@gmail.com
+-- copyright:           
+category:             Database
+build-type:           Simple
+extra-source-files:   ChangeLog.md
+cabal-version:        >=1.10
+
+library
+  hs-source-dirs:     src
+  default-language:   Haskell2010
+  ghc-options:        -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
+  exposed-modules:
+      Database.Odpi     
+    , Database.Odpi.Context
+    , Database.Odpi.Connection
+    , Database.Odpi.Data
+    , Database.Odpi.FromField
+    , Database.Odpi.FromRow
+    , Database.Odpi.NativeValue
+    , Database.Odpi.Pool
+    , Database.Odpi.Statement
+    , Database.Odpi.Types
+    , Database.Odpi.Util
+  build-depends:
+      base             >= 4.7    && < 5.0
+    , bytestring       >= 0.10   && < 0.11
+    , hashable         >= 1.1    && < 1.4
+    , odpi-libdpi      >= 0.1    && < 0.3
+    , Only             >= 0.1    && < 0.2
+    , text             >= 1.0    && < 1.3
+    , time             >= 1.6    && < 1.10
+    , scientific       >= 0.3    && < 0.4
