@@ -59,8 +59,8 @@ import Data.Scientific (Scientific)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Time.Calendar (fromGregorian)
-import Data.Time.LocalTime
-    ( LocalTime(LocalTime), TimeOfDay(TimeOfDay) )
+import Data.Time.Clock (UTCTime(..))
+import Data.Time.LocalTime (LocalTime(LocalTime), TimeOfDay(TimeOfDay), localTimeToUTC, utc)
 
 import Database.Odpi.NativeValue
 import Database.Odpi.LibDpi
@@ -186,6 +186,32 @@ instance FromField LocalTime where
                       (sec + fsec)
     pureOk $ LocalTime d t
   fromField i v = convError "LocalTime" i v
+
+-- | This follows the path of least resistance and just converts LocalTime to UTCTime
+-- assuming it's already in UTC so without any actuall shift. If you think this is a
+-- bug please submit an issue or a PR and describe how this should work.
+--
+-- LocalTime and UTCTime use same representation for date and different represenation
+-- for time but neither of them actually stores time zone and they seem to be
+-- isomorphic. If you have a raw value without a type it's up to you how you
+-- want to interpret it. In other words the interpretation does not follow from the
+-- value but from the type, so if we are to recover the type than... I guess anything
+-- goes.
+--
+-- There are conversion functions accepting a time zone which suggests that the
+-- intended use of LocalTime is to store local time (whatever that means) and for
+-- UTCTime to actually store UTC but you can just as well store local time in UTCTime
+-- if you want and ignore the type suggested meaning.
+--
+-- Additionally Oracle timestamp can store a time zone which could be used as a basis
+-- for conversion if we wanted to take that route.
+--
+-- Not sure what the best course of action is here so the simplest thing possible is
+-- implemented for now. It may be wrong. My guess in general is this should follow the
+-- principle of least surprise - which is unfortunatelly TBD.
+instance FromField UTCTime where
+  fromField p x@(NativeTimestamp _) = fmap (localTimeToUTC utc) <$> fromField p x
+  fromField i v = convError "UTCTime" i v
 
 instance FromField a => FromField (Maybe a) where
   fromField _ (NativeNull _) = pureOk Nothing
