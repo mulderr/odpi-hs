@@ -105,9 +105,10 @@ withStatement c scrollable sql =
           (stmtRelease)
 
 -- | Naive query runner returning list
-querySimple :: forall a. (FromRow a) => Connection -> ByteString -> IO [a]
-querySimple conn sql =
+querySimple :: forall a. (FromRow a) => Connection -> ByteString -> [NativeValue] -> IO [a]
+querySimple conn sql params =
   withStatement conn False sql $ \s -> do
+    bindparams s params
     _ <- stmtExecute s Lib.ModeExecDefault
     defineValuesForRow @a s
     go s
@@ -119,3 +120,6 @@ querySimple conn sql =
           x <- fromRow s
           go s >>= pure . (x :)
         Nothing -> pure []
+
+    bindparams stmt ps =
+      mapM_ (\(idx, v) -> stmtBindValueByPos stmt idx v) (zip [1..] ps) 
