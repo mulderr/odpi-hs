@@ -22,17 +22,27 @@ stmtBindByName s name v =
 stmtBindByPos :: Statement -> Word32 -> Var -> IO Bool
 stmtBindByPos s pos v = isOk <$> stmt_bindByPos (getStmt s) (fromIntegral pos) (getVar v)
 
-stmtBindValueByName :: Statement -> ByteString -> NativeTypeNum -> Ptr Data -> IO Bool
-stmtBindValueByName s name ty p =
+-- | Wrapper over stmtBindValueByName'
+stmtBindValueByName :: Statement -> ByteString -> NativeValue -> IO Bool
+stmtBindValueByName s name v =
+  withNativeValue v $ stmtBindValueByName' s name
+
+-- | See dpiStmt_bindValueByName
+stmtBindValueByName' :: Statement -> ByteString -> NativeTypeNum -> Ptr Data -> IO Bool
+stmtBindValueByName' s name ty p =
   pure (stmt_bindValueByName (getStmt s))
     >>= inStrLen name
     >>= \f -> isOk <$> f (fromE ty) p
 
+-- | Wrapper over stmtBindValueByPos'
 stmtBindValueByPos :: Statement -> Word32 -> NativeValue -> IO Bool
-stmtBindValueByPos s pos v = withNativeValue v $ stmtBindValueByPos' s pos
+stmtBindValueByPos s pos v =
+  withNativeValue v $ stmtBindValueByPos' s pos
 
+-- | See dpiStmt_bindValueByPos
 stmtBindValueByPos' :: Statement -> Word32 -> NativeTypeNum -> Ptr Data -> IO Bool
-stmtBindValueByPos' s pos ty p = isOk <$> stmt_bindValueByPos (getStmt s) (fromIntegral pos) (fromE ty) p
+stmtBindValueByPos' s pos ty p =
+  isOk <$> stmt_bindValueByPos (getStmt s) (fromIntegral pos) (fromE ty) p
 
 stmtClose :: Statement -> Maybe ByteString -> IO Bool
 stmtClose s mtag =

@@ -11,6 +11,11 @@
 #-}
 -- | Conversions from ODPI-C NativeValue to Haskell types.
 --
+-- * Numbers
+--
+-- In ODPI-C the default native type is integer if it the number can be
+-- placed in a 64-bit integer and is otherwise returned as double.
+--
 -- For number types we strictly follow the principle to never implicity
 -- truncate. This means we never convert from a "larger" NativeValue to
 -- a "smaller" Haskell type unless we can guarantee it's safe by examining
