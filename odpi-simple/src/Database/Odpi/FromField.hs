@@ -5,6 +5,9 @@
   , StandaloneDeriving
   , GeneralizedNewtypeDeriving
   , DeriveFunctor
+  , ExistentialQuantification
+  , AllowAmbiguousTypes
+  , TypeApplications
 #-}
 -- | Conversions from ODPI-C NativeValue to Haskell types.
 --
@@ -62,8 +65,12 @@ import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime(..))
 import Data.Time.LocalTime (LocalTime(LocalTime), TimeOfDay(TimeOfDay), localTimeToUTC, utc)
 
-import Database.Odpi.NativeValue
 import Database.Odpi.LibDpi
+import Database.Odpi.NativeValue
+import Database.Odpi.Statement
+import Database.Odpi.Types
+
+data AnyField = forall a. FromField a => AF (Proxy a)
 
 data Ok a = Errors [SomeException] | Ok !a
   deriving(Show, Functor)
@@ -96,11 +103,21 @@ fromIntegralField tyName maxPrec i v = do
     f (NativeUint64 x) p s | p <= maxPrec && s == 0 = pureOk $ fromIntegral x
     f _ _ _ = convError tyName i v
 
--- | A type that may be converted from dpiData
+field :: FromField a => Statement -> Word32 -> IO a
+field s i = do
+  qi <- stmtGetQueryInfo s i
+  v <- stmtGetQueryValue s i
+  r <- fromField qi v
+  case r of
+    Ok a -> pure a
+    Errors (e:_) -> throwIO e
+    Errors _ -> error "empty exception list for Errors"
+
+-- | A type that may be read from dpiData
 class FromField a where
   fromField :: QueryInfo -> NativeValue -> IO (Ok a)
-  nativeTypeFor :: Proxy a -> Maybe NativeTypeNum
-  nativeTypeFor _ = Nothing
+  nativeTypeFor :: Maybe NativeTypeNum
+  nativeTypeFor = Nothing
 
 instance FromField Bool where
   fromField _ (NativeBool b) = pureOk b
@@ -117,6 +134,10 @@ instance FromField ByteString where
 instance FromField T.Text where
   fromField _ (NativeBytes b) = pureOk $ TE.decodeUtf8 b
   fromField i v = convError "Text" i v
+
+instance FromField String where
+  fromField _ (NativeBytes b) = pureOk $ T.unpack $ TE.decodeUtf8 b
+  fromField i v = convError "String" i v
 
 -- Int is rather vague by definition:
 -- A fixed-precision integer type with at least the range [-2^29 .. 2^29-1]
@@ -172,7 +193,7 @@ instance FromField Double where
 instance FromField Scientific where
   fromField _ (NativeBytes x) = pureOk $ read $ B8.unpack x
   fromField i v = convError "Scientific" i v
-  nativeTypeFor _ = Just NativeTypeBytes
+  nativeTypeFor = Just NativeTypeBytes
 
 instance FromField LocalTime where
   fromField _ (NativeTimestamp x) = do
@@ -216,7 +237,7 @@ instance FromField UTCTime where
 instance FromField a => FromField (Maybe a) where
   fromField _ (NativeNull _) = pureOk Nothing
   fromField i v = fmap Just <$> fromField i v
-  nativeTypeFor _ = nativeTypeFor (Proxy :: Proxy a)
+  nativeTypeFor = nativeTypeFor @a
 
 -- | A wrapper to provide truncating instances for number types that
 -- override ODPI-C defaults.
@@ -229,40 +250,39 @@ deriving instance Integral a => Integral (Exactly a)
 instance FromField (Exactly Int) where
   fromField _ (NativeInt64 x) = pureOk $ Exactly $ fromIntegral x
   fromField i v = convError "Exactly Int" i v
-  nativeTypeFor _ = Just NativeTypeInt64
+  nativeTypeFor = Just NativeTypeInt64
 
 instance FromField (Exactly Int16) where
   fromField _ (NativeInt64 x) = pureOk $ Exactly $ fromIntegral x
   fromField i v = convError "Exactly Int16" i v
-  nativeTypeFor _ = Just NativeTypeInt64
+  nativeTypeFor = Just NativeTypeInt64
 
 instance FromField (Exactly Int32) where
   fromField _ (NativeInt64 x) = pureOk $ Exactly $ fromIntegral x
   fromField i v = convError "Exactly Int32" i v
-  nativeTypeFor _ = Just NativeTypeInt64
+  nativeTypeFor = Just NativeTypeInt64
 
 instance FromField (Exactly Int64) where
   fromField _ (NativeInt64 x) = pureOk $ Exactly x
   fromField i v = convError "Exactly Int64" i v
-  nativeTypeFor _ = Just NativeTypeInt64
+  nativeTypeFor = Just NativeTypeInt64
 
 instance FromField (Exactly Word) where
   fromField _ (NativeUint64 x) = pureOk $ Exactly $ fromIntegral x
   fromField i v = convError "Exactly Word" i v
-  nativeTypeFor _ = Just NativeTypeUint64
+  nativeTypeFor = Just NativeTypeUint64
 
 instance FromField (Exactly Word16) where
   fromField _ (NativeUint64 x) = pureOk $ Exactly $ fromIntegral x
   fromField i v = convError "Exactly Word16" i v
-  nativeTypeFor _ = Just NativeTypeUint64
+  nativeTypeFor = Just NativeTypeUint64
 
 instance FromField (Exactly Word32) where
   fromField _ (NativeUint64 x) = pureOk $ Exactly $ fromIntegral x
   fromField i v = convError "Exactly Word32" i v
-  nativeTypeFor _ = Just NativeTypeUint64
+  nativeTypeFor = Just NativeTypeUint64
 
 instance FromField (Exactly Word64) where
   fromField _ (NativeUint64 x) = pureOk $ Exactly x
   fromField i v = convError "Exactly Word64" i v
-  nativeTypeFor _ = Just NativeTypeUint64
-
+  nativeTypeFor = Just NativeTypeUint64

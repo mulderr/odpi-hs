@@ -1,5 +1,6 @@
 {-# language
     ScopedTypeVariables
+  , TypeApplications
 #-}
 
 module Database.Odpi
@@ -57,7 +58,6 @@ module Database.Odpi
 
 import Control.Exception (bracket)
 import Data.ByteString (ByteString)
-import Data.Proxy ( Proxy(..) )
 import Data.Tuple.Only ( Only(..) )
 
 import qualified Database.Odpi.LibDpi as Lib
@@ -109,7 +109,7 @@ querySimple :: forall a. (FromRow a) => Connection -> ByteString -> IO [a]
 querySimple conn sql =
   withStatement conn False sql $ \s -> do
     _ <- stmtExecute s Lib.ModeExecDefault
-    defineValuesForRow (Proxy :: Proxy a) s
+    defineValuesForRow @a s
     go s
   where
     go s = do

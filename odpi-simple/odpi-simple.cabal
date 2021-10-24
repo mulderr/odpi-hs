@@ -1,5 +1,5 @@
 name:                 odpi-simple
-version:              0.3.0.0
+version:              0.4.0.0
 synopsis:             Mid-level ODPI-C wrapper
 description:          Convenience wrappers and utility functions around odpi-libdpi.
 license:              BSD3
@@ -23,6 +23,7 @@ library
     , Database.Odpi.Data
     , Database.Odpi.FromField
     , Database.Odpi.FromRow
+    , Database.Odpi.FromRow.Generic
     , Database.Odpi.NativeValue
     , Database.Odpi.Pool
     , Database.Odpi.Statement

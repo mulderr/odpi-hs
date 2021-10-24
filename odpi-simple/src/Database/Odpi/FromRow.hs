@@ -4,23 +4,27 @@
   , FlexibleContexts
   , ScopedTypeVariables
   , TypeApplications
+  , DeriveGeneric
+  , DefaultSignatures
+  , AllowAmbiguousTypes
 #-}
 
 module Database.Odpi.FromRow where
 
-import Control.Exception (throwIO)
-import Data.Proxy ( Proxy(..) )
+import GHC.Generics
 import Data.Tuple.Only ( Only(Only) )
 import Data.Word ( Word32 )
+import Data.Proxy
 
 import Database.Odpi.FromField
 import Database.Odpi.LibDpi
 import Database.Odpi.Statement
 import Database.Odpi.Types
 
-data AnyField = forall a. FromField a => AF (Proxy a)
+import Database.Odpi.FromRow.Generic
 
--- | A collection that can be converted from a sequence of fields
+
+-- | A collection that can be read from an ODPI-C statement
 class FromRow a where
   -- | A list of target Haskell types for each column in a row
   --
@@ -28,29 +32,27 @@ class FromRow a where
   -- needed. For example Scientific would be fetched as NativeTypeDouble
   -- by default whereas we want NativeTypeBytes to get full precision.
   -- Uses nativeTypeFor from FromField.
-  rowRep :: Proxy a -> [AnyField]
+  rowRep :: [AnyField]
+
+  default rowRep :: GFromRow (Rep a) => [AnyField]
+  rowRep = growrep @(Rep a)
 
   -- | Fetch values from the current row
   fromRow :: Statement -> IO a
 
-field :: FromField a => Statement -> Word32 -> IO a
-field s i = do
-  qi <- stmtGetQueryInfo s i
-  v <- stmtGetQueryValue s i
-  r <- fromField qi v
-  case r of
-    Ok a -> pure a
-    Errors (e:_) -> throwIO e
-    Errors _ -> error "empty exception list for Errors"
+  default fromRow :: (Generic a, GFromRow (Rep a)) => Statement -> IO a
+  fromRow s = do
+    (x, _) <- gfromrow @(Rep a) 1 s
+    pure $ to x
 
-defineValuesForRow :: forall a. FromRow a => Proxy a -> Statement -> IO ()
-defineValuesForRow p s = do
+defineValuesForRow :: forall a. FromRow a => Statement -> IO ()
+defineValuesForRow s = do
   n <- stmtGetNumQueryColumns s
-  mapM_ f $ zip [1..n] (rowRep p)
+  mapM_ f $ zip [1..n] (rowRep @a)
   where
     f :: (Word32, AnyField) -> IO ()
-    f (i, AF pa) =
-      case nativeTypeFor pa of
+    f (i, AF (_ :: Proxy x)) =
+      case nativeTypeFor @x of
         Nothing -> pure ()
         Just ty -> defineValueForTy s i ty
 
@@ -63,50 +65,41 @@ defineValueForTy s i ty = do
   pure ()
 
 instance (FromField a) => FromRow (Only a) where
-  rowRep _ = [AF (Proxy @a)]
+  --rowRep = [AF (Proxy @a)]
   fromRow s = Only <$> field s 1
 
 instance (FromField a, FromField b) => FromRow (a, b) where
-  rowRep _ = [AF (Proxy @a), AF (Proxy @b)]
+  --rowRep = [AF (Proxy @a), AF (Proxy @b)]
   fromRow s = (,) <$> field s 1 <*> field s 2
 
 instance (FromField a, FromField b, FromField c) => FromRow (a, b, c) where
-  rowRep _ = [AF (Proxy @a), AF (Proxy @b), AF (Proxy @c)]
+  --rowRep = [AF (Proxy @a), AF (Proxy @b), AF (Proxy @c)]
   fromRow s = (,,) <$> field s 1 <*> field s 2 <*> field s 3
 
 instance (FromField a, FromField b, FromField c, FromField d) => FromRow (a, b, c, d) where
-  rowRep _ = [AF (Proxy @a), AF (Proxy @b), AF (Proxy @c), AF (Proxy @d)]
+  --rowRep = [AF (Proxy @a), AF (Proxy @b), AF (Proxy @c), AF (Proxy @d)]
   fromRow s = (,,,) <$> field s 1 <*> field s 2 <*> field s 3 <*> field s 4
 
 instance ( FromField a, FromField b, FromField c, FromField d
          , FromField e ) => FromRow (a, b, c, d, e) where
-  rowRep _ = [ AF (Proxy @a), AF (Proxy @b), AF (Proxy @c), AF (Proxy @d)
-             , AF (Proxy @e)
-             ]
+  -- rowRep = [ AF (Proxy @a), AF (Proxy @b), AF (Proxy @c), AF (Proxy @d)
+  --          , AF (Proxy @e)
+  --          ]
   fromRow s = (,,,,) <$> field s 1 <*> field s 2 <*> field s 3 <*> field s 4
                      <*> field s 5
 
 instance ( FromField a, FromField b, FromField c, FromField d
          , FromField e, FromField f ) => FromRow (a, b, c, d, e, f) where
-  rowRep _ = [ AF (Proxy @a), AF (Proxy @b), AF (Proxy @c), AF (Proxy @d)
-             , AF (Proxy @e), AF (Proxy @f)
-             ]
+  -- rowRep = [ AF (Proxy @a), AF (Proxy @b), AF (Proxy @c), AF (Proxy @d)
+  --          , AF (Proxy @e), AF (Proxy @f)
+  --          ]
   fromRow s = (,,,,,) <$> field s 1 <*> field s 2 <*> field s 3 <*> field s 4
                       <*> field s 5 <*> field s 6
 
 instance ( FromField a, FromField b, FromField c, FromField d
          , FromField e, FromField f, FromField g ) => FromRow (a, b, c, d, e, f, g) where
-  rowRep _ = [ AF (Proxy @a), AF (Proxy @b), AF (Proxy @c), AF (Proxy @d)
-             , AF (Proxy @e), AF (Proxy @f), AF (Proxy @g)
-             ]
+  -- rowRep = [ AF (Proxy @a), AF (Proxy @b), AF (Proxy @c), AF (Proxy @d)
+  --          , AF (Proxy @e), AF (Proxy @f), AF (Proxy @g)
+  --          ]
   fromRow s = (,,,,,,) <$> field s 1 <*> field s 2 <*> field s 3 <*> field s 4
                        <*> field s 5 <*> field s 6 <*> field s 7
-
-instance ( FromField a, FromField b, FromField c, FromField d
-         , FromField e, FromField f, FromField g, FromField h ) => FromRow (a, b, c, d, e, f, g, h) where
-  rowRep _ = [ AF (Proxy @a), AF (Proxy @b), AF (Proxy @c), AF (Proxy @d)
-             , AF (Proxy @e), AF (Proxy @f), AF (Proxy @g), AF (Proxy @h)
-             ]
-  fromRow s = (,,,,,,,) <$> field s 1 <*> field s 2 <*> field s 3 <*> field s 4
-                        <*> field s 5 <*> field s 6 <*> field s 7 <*> field s 8
-
