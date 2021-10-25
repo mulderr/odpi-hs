@@ -1,2 +1,3 @@
 packages:
   ./odpi-simple
+  ./odpi-streaming

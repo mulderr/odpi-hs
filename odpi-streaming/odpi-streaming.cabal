@@ -1,0 +1,27 @@
+name:                 odpi-streaming
+version:              0.1.0.0
+synopsis:             Streaming interface for odpi-simple
+description:          Primitives for streaming data using @odpi-simple@ and @streaming@
+license:              BSD3
+license-file:         LICENSE
+author:               Maciej Kazulak
+maintainer:           kazulakm@gmail.com
+-- copyright:
+category:             Database
+build-type:           Simple
+extra-source-files:   ChangeLog.md
+cabal-version:        >=1.10
+
+library
+  hs-source-dirs:     src
+  default-language:   Haskell2010
+  ghc-options:        -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
+  exposed-modules:
+      Database.Odpi.Streaming
+  build-depends:
+      base             >= 4.7    && < 5.0
+    , bytestring       >= 0.10   && < 0.11
+    , odpi-simple      >= 0.4    && < 0.5
+    , exceptions       >= 0.10   && < 0.11
+    , streaming-with
+    , streaming        >= 0.2    && < 0.3
