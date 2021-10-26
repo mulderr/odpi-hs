@@ -12,31 +12,32 @@ import Streaming (Stream)
 import Streaming.Prelude (Of (..))
 import qualified Streaming.Prelude as S
 
--- streaming-with
-import Streaming.With
+-- exceptions
+import Control.Monad.Catch
 
 -- odpi-simple
 import Database.Odpi
 
 
-query :: forall a. (FromRow a) => Connection -> ByteString -> [NativeValue] -> Stream (Of a) IO ()
-query conn sql params = do
+query :: forall m a b. (FromRow a, MonadIO m, MonadMask m) => Connection -> ByteString -> [NativeValue] -> (Stream (Of a) m () -> m b) -> m b
+query conn sql params cont = do
   bracket (liftIO $ connPrepareStmt conn False sql)
           (liftIO . stmtRelease)
-          go
+          (\s -> prep s >> cont (go s))
   where
-    go s = do
-      liftIO $ do
-        bindparams s params
-        _ <- stmtExecute s ModeExecDefault
-        defineValuesForRow @a s
+    prep :: Statement -> m ()
+    prep s = liftIO $ do
+      -- bind params
+      mapM_ (\(idx, v) -> stmtBindValueByPos s idx v) (zip [1..] params)
+      _ <- stmtExecute s ModeExecDefault
+      defineValuesForRow @a s
+    
+    go :: Statement -> Stream (Of a) m ()
+    go s =
       S.untilLeft (fetchOne s)
 
-    bindparams stmt ps =
-      mapM_ (\(idx, v) -> stmtBindValueByPos stmt idx v) (zip [1..] ps)
-
-    fetchOne :: Statement -> IO (Either () a)
-    fetchOne s = do
+    fetchOne :: Statement -> m (Either () a)
+    fetchOne s = liftIO $ do
       midx <- stmtFetch s
       case midx of
         Nothing -> pure $ Left ()
