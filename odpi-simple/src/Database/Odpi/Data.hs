@@ -64,7 +64,7 @@ setFloat :: Ptr Data -> Float -> IO ()
 setFloat p x = data_setFloat p (CFloat x)
 
 setInt64 :: Ptr Data -> Int64 -> IO ()
-setInt64 p x = data_setFloat p (fromIntegral x)
+setInt64 p x = data_setInt64 p (fromIntegral x)
 
 setIntervalDs :: Ptr Data -> IntervalDs -> IO ()
 setIntervalDs p x =
