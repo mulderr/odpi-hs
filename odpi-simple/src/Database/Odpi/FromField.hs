@@ -9,7 +9,7 @@
   , AllowAmbiguousTypes
   , TypeApplications
 #-}
--- | Conversions from ODPI-C NativeValue to Haskell types.
+-- | Conversions from ODPI-C NativeValue to Haskell types
 --
 -- * Numbers
 --
@@ -54,6 +54,14 @@
 -- ourselves.
 --
 -- Also see 'Exactly' for common cases.
+--
+--
+-- * Dates and timestamps
+--
+-- For UTCTime by default we are very strict to ensure the value is actually
+-- UTC. If the underlying Oracle data type does not provide time zone info,
+-- an error will be reported. To read UTCTime from DATE or TIMESTAMP use
+-- 'Exactly UTCTime' or write your own wrapper.
 module Database.Odpi.FromField where
 
 import Control.Exception
@@ -68,7 +76,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime(..))
-import Data.Time.LocalTime (LocalTime(LocalTime), TimeOfDay(TimeOfDay), localTimeToUTC, utc)
+import Data.Time.LocalTime (LocalTime(LocalTime), TimeOfDay(TimeOfDay), TimeZone(TimeZone), localTimeToUTC, utc)
 
 import Database.Odpi.LibDpi
 import Database.Odpi.NativeValue
@@ -213,30 +221,32 @@ instance FromField LocalTime where
     pureOk $ LocalTime d t
   fromField i v = convError "LocalTime" i v
 
--- | This follows the path of least resistance and just converts LocalTime to UTCTime
--- assuming it's already in UTC so without any actuall shift. If you think this is a
--- bug please submit an issue or a PR and describe how this should work.
+-- This instance tries to be very strict in ensuring the value is UTC
 --
--- LocalTime and UTCTime use same representation for date and different represenation
--- for time but neither of them actually stores time zone and they seem to be
--- isomorphic. If you have a raw value without a type it's up to you how you
--- want to interpret it. In other words the interpretation does not follow from the
--- value but from the type, so if we are to recover the type than... I guess anything
--- goes.
+-- The rule is that the underlying OracleTypeNum needs to provide time zone information
+-- either explicitly (stored in the database) or implicitly (where system time zone is
+-- used). Otherwise, that is in any case where time zone is unknown, an error will be
+-- reported:
 --
--- There are conversion functions accepting a time zone which suggests that the
--- intended use of LocalTime is to store local time (whatever that means) and for
--- UTCTime to actually store UTC but you can just as well store local time in UTCTime
--- if you want and ignore the type suggested meaning.
+-- DATE                            error, unknown time zone
+-- TIMESTAMP                       error, unknown time zone
+-- TIMESTAMP WITH TIME ZONE        ok, explicitly stores time zone
+-- TIMESTAMP WITH LOCAL TIME ZONE  ok, system time zone is used
 --
--- Additionally Oracle timestamp can store a time zone which could be used as a basis
--- for conversion if we wanted to take that route.
---
--- Not sure what the best course of action is here so the simplest thing possible is
--- implemented for now. It may be wrong. My guess in general is this should follow the
--- principle of least surprise - which is unfortunatelly TBD.
+-- There are however valid use cases where you'd want to read UTCTime from DATE or
+-- TIMESTAMP or do other shenanigans. You can:
+-- * use Exactly UTCTime to read UTCTime from any Timestamp by assuming it is UTC if neccessary
+-- * use LocalTime and convert to UTC haskell side
+-- * use a custom newtype over UTCTime with a custom FromField instance
 instance FromField UTCTime where
-  fromField p x@(NativeTimestamp _) = fmap (localTimeToUTC utc) <$> fromField p x
+  fromField i x@(NativeTimestamp t) =
+    let 
+      tz = TimeZone (60 * (fromIntegral $ timestamp_tzHourOffset t) + (fromIntegral $ timestamp_tzMinuteOffset t)) False "XXX"
+    in
+      case dataTypeInfo_oracleTypeNum $ queryInfo_typeInfo i of
+        OracleTypeTimestampTz -> fmap (localTimeToUTC tz) <$> fromField i x
+        OracleTypeTimestampLtz -> fmap (localTimeToUTC tz) <$> fromField i x
+        _ -> convError "UTCTime" i x
   fromField i v = convError "UTCTime" i v
 
 instance FromField a => FromField (Maybe a) where
@@ -244,8 +254,12 @@ instance FromField a => FromField (Maybe a) where
   fromField i v = fmap Just <$> fromField i v
   nativeTypeFor = nativeTypeFor @a
 
--- | A wrapper to provide truncating instances for number types that
--- override ODPI-C defaults.
+-- | A wrapper that provides alternative, potentially unsafe but very useful FromField instances
+--
+-- For number types, we allow truncation to the target type even if we cannot guarantee the
+-- conversion is safe.
+--
+-- For UTCTime, we read the Timestamp as UTC even if the time zone is unknown.
 newtype Exactly a = Exactly { unExactly :: a } deriving (Eq, Ord, Show)
 deriving instance Num a => Num (Exactly a)
 deriving instance Enum a => Enum (Exactly a)
@@ -291,3 +305,17 @@ instance FromField (Exactly Word64) where
   fromField _ (NativeUint64 x) = pureOk $ Exactly x
   fromField i v = convError "Exactly Word64" i v
   nativeTypeFor = Just NativeTypeUint64
+
+-- When time zone is unknown assumes UTC
+instance FromField (Exactly UTCTime) where
+  fromField i x@(NativeTimestamp t) =
+    let
+      tz = TimeZone (60 * (fromIntegral $ timestamp_tzHourOffset t) + (fromIntegral $ timestamp_tzMinuteOffset t)) False "XXX"
+    in
+      case dataTypeInfo_oracleTypeNum $ queryInfo_typeInfo i of
+        OracleTypeDate -> fmap (Exactly . localTimeToUTC utc) <$> fromField i x
+        OracleTypeTimestamp -> fmap (Exactly . localTimeToUTC utc) <$> fromField i x
+        OracleTypeTimestampTz -> fmap (Exactly . localTimeToUTC tz) <$> fromField i x
+        OracleTypeTimestampLtz -> fmap (Exactly . localTimeToUTC tz) <$> fromField i x
+        _ -> convError "UTCTime" i x
+  fromField i v = convError "UTCTime" i v
