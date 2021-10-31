@@ -94,4 +94,3 @@ contextGetError ctx =
   alloca $ \p -> do
     context_getError ctx p
     peek p
-

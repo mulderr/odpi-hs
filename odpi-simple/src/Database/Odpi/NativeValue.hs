@@ -13,6 +13,9 @@ import Foreign.Ptr (Ptr)
 import Foreign.Marshal.Alloc (alloca)
 import GHC.Generics ( Generic )
 
+import Data.Time
+import Data.Fixed
+
 import Database.Odpi.Data
 import Database.Odpi.LibDpi
 
@@ -97,3 +100,38 @@ withNativeValue v f =
 isNativeNull :: NativeValue -> Bool
 isNativeNull (NativeNull _) = True
 isNativeNull _ = False
+
+
+-- * Date and time conversions
+
+utcToTimestamp :: UTCTime -> Timestamp
+utcToTimestamp = localToTimestamp utc . utcToLocalTime utc
+
+localToTimestamp :: TimeZone -> LocalTime -> Timestamp
+localToTimestamp tz t = Timestamp
+  { timestamp_year = fromIntegral y
+  , timestamp_month = fromIntegral m
+  , timestamp_day = fromIntegral d
+  , timestamp_hour = fromIntegral hh
+  , timestamp_minute = fromIntegral mi
+  , timestamp_second = fromIntegral sec -- whole seconds
+  , timestamp_fsecond = fromIntegral fsec -- fractional second part in nanosec
+  , timestamp_tzHourOffset = fromIntegral tzHours
+  , timestamp_tzMinuteOffset = fromIntegral tzMins
+  }
+  where
+    (y, m, d) = toGregorian $ localDay t
+
+    tod = localTimeOfDay t
+    hh = todHour tod
+    mi = todMin tod
+
+    MkFixed picosec = todSec tod
+    sec = picosec `div` resolution (todSec tod)
+    fsec = (picosec `mod` resolution (todSec tod)) `div` 1000
+
+    tzm = timeZoneMinutes tz
+    (tzHours, tzMins) = tzm `divMod` 60
+
+zonedToTimestamp :: ZonedTime -> Timestamp
+zonedToTimestamp (ZonedTime lt tz) = localToTimestamp tz lt

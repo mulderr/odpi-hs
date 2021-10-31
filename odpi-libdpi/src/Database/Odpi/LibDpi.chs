@@ -710,8 +710,8 @@ data Timestamp
   , timestamp_minute :: Word8
   , timestamp_second :: Word8
   , timestamp_fsecond :: Word32
-  , timestamp_tzHourOffset :: Word32
-  , timestamp_tzMinuteOffset :: Word32
+  , timestamp_tzHourOffset :: Int8
+  , timestamp_tzMinuteOffset :: Int8
   } deriving (Eq, Generic, Show)
 
 instance Storable Timestamp where
