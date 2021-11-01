@@ -2,6 +2,7 @@ module Database.Odpi.Types where
 
 import Control.Exception (Exception)
 import Foreign.Ptr (Ptr)
+import Data.Text (Text)
 
 import Database.Odpi.LibDpi
 
@@ -48,6 +49,7 @@ instance HasContext Var where
 
 data DpiException
   = DpiException ErrorInfo
+  | DpiCallFailure Text
   deriving Show
 
 instance Exception DpiException

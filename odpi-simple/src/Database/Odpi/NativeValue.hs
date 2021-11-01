@@ -104,9 +104,18 @@ isNativeNull _ = False
 
 -- * Date and time conversions
 
+-- | Convert 'UTCTime' to 'Timestamp'
 utcToTimestamp :: UTCTime -> Timestamp
 utcToTimestamp = localToTimestamp utc . utcToLocalTime utc
 
+-- | Convert 'LocalTime' to 'Timestmap'
+--
+-- 'Timestamp' stores time zone offset while 'LocalTime' does not so a 'TimeZone' needs to
+-- be explicitly provided.
+--
+-- However, there are also valid cases where you do not care about the time zone because
+-- the underlying Oracle datatype (DATE, TIMESTAMP) is not time zone aware. In those
+-- cases you can use 'utc' to write a +0000 offset, which should simply be ignored.
 localToTimestamp :: TimeZone -> LocalTime -> Timestamp
 localToTimestamp tz t = Timestamp
   { timestamp_year = fromIntegral y
@@ -133,5 +142,6 @@ localToTimestamp tz t = Timestamp
     tzm = timeZoneMinutes tz
     (tzHours, tzMins) = tzm `divMod` 60
 
+-- | Convert 'ZonedTime' to 'Timestamp'
 zonedToTimestamp :: ZonedTime -> Timestamp
 zonedToTimestamp (ZonedTime lt tz) = localToTimestamp tz lt

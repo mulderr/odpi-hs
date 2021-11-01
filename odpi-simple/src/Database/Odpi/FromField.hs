@@ -317,5 +317,5 @@ instance FromField (Exactly UTCTime) where
         OracleTypeTimestamp -> fmap (Exactly . localTimeToUTC utc) <$> fromField i x
         OracleTypeTimestampTz -> fmap (Exactly . localTimeToUTC tz) <$> fromField i x
         OracleTypeTimestampLtz -> fmap (Exactly . localTimeToUTC tz) <$> fromField i x
-        _ -> convError "UTCTime" i x
-  fromField i v = convError "UTCTime" i v
+        _ -> convError "Exactly UTCTime" i x
+  fromField i v = convError "Exactly UTCTime" i v

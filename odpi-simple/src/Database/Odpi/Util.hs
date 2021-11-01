@@ -32,6 +32,9 @@ inStrLenMaybe mb f =
 inPtr :: (Storable a) => (Ptr a -> IO b) -> (Ptr a -> r) -> IO r
 inPtr initializePtr f = alloca $ \p -> initializePtr p >> pure (f p)
 
+inPtrNull :: (Ptr a -> r) -> IO r
+inPtrNull f = pure (f nullPtr)
+
 throwLeft :: Either ErrorInfo a -> IO a
 throwLeft = either (throwIO . DpiException) pure
 

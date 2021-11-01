@@ -1,11 +1,15 @@
+{-# language OverloadedStrings #-}
+
 module Database.Odpi.Pool where
 
 import Data.ByteString (ByteString)
 import Data.Word ( Word32 )
 
+import Control.Exception (throwIO)
 import Database.Odpi.LibDpi
 import Database.Odpi.Types
 import Database.Odpi.Util
+import Control.Monad (when, unless)
 
 poolAcquireConnectionEither
   :: Pool
@@ -44,8 +48,16 @@ poolCreateEither (Context ctx) uname pass connstr =
     >>= inStrLen uname
     >>= inStrLen pass
     >>= inStrLen connstr
-    >>= inPtr (\p -> context_initCommonCreateParams ctx p)
-    >>= inPtr (\p -> context_initPoolCreateParams ctx p)
+    -- >>= inPtr (\p -> do
+    --   r <- context_initCommonCreateParams ctx p
+    --   unless (isOk r) $ throwIO $ DpiCallFailure "context_initCommonCreateParams"
+    --   )
+    >>= inPtrNull
+    -- >>= inPtr (\p -> do
+    --   r <- context_initPoolCreateParams ctx p
+    --   unless (isOk r) $ throwIO $ DpiCallFailure "context_initPoolCreateParams"
+    --   )
+    >>= inPtrNull
     >>= out1Either ctx
     >>= pure . fmap (Pool . (,) ctx)
 
