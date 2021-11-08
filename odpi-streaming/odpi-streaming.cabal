@@ -23,5 +23,4 @@ library
     , bytestring       >= 0.10   && < 0.11
     , odpi-simple      >= 0.4    && < 0.5
     , exceptions       >= 0.10   && < 0.11
-    , streaming-with
     , streaming        >= 0.2    && < 0.3
