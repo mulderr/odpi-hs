@@ -20,7 +20,7 @@ library
       Database.Odpi.Streaming
   build-depends:
       base             >= 4.7    && < 5.0
-    , bytestring       >= 0.10   && < 0.11
-    , odpi-simple      >= 0.4    && < 0.5
+    , bytestring       >= 0.10   && < 0.12
+    , odpi-simple      >= 0.4    && < 0.6
     , exceptions       >= 0.10   && < 0.11
     , streaming        >= 0.2    && < 0.3
